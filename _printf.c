@@ -1,18 +1,22 @@
 #include "main.h"
-/**
- * _printf - Custom printf function
- * @format: The format string
- * @...: Additional arguments to format
- * Return: Number of characters printed
- */
+
 int _printf(const char *format, ...)
 {
+	int digits = 0;
+	int i;
+	int num;
+	int temp;
+	int hex_digits;
+	int length;
+	unsigned int hex_num;
+	unsigned int octal_num;
+	unsigned int unsigned_num;
+
 	va_list args;
 	int count = 0;
-	int flags = 0;
-	int length_modifier = 0; /* 0: None, 1: 'h', 2: 'l' */
 
 	va_start(args, format);
+
 	while (*format != '\0')
 	{
 		if (*format != '%')
@@ -23,72 +27,126 @@ int _printf(const char *format, ...)
 		else
 		{
 			format++;
-			/* Handle length modifiers */
-
-			if (*format == 'h')
-			{
-				length_modifier = 1;
-				format++;
-			}
-			else if (*format == 'l')
-			{
-				length_modifier = 2;
-				format++;
-			}
-
 			switch (*format)
 			{
 				case 'c':
-					print_char(args, &count);
+					_putc(va_arg(args, int));
+					count++;
 					break;
 				case 's':
-					print_string(args, &count);
-					break;
+					{
+						char *str = va_arg(args, char *);
+						while (*str != '\0')
+						{
+							_putc(*str);
+							str++;
+							count++;
+						}
+						break;
+					}
 				case '%':
 					_putc('%');
 					count++;
 					break;
 				case 'd':
 				case 'i':
-					if (length_modifier == 1)
-						print_short_decimal(args, &count, flags);
-					else if (length_modifier == 2)
-						print_long_decimal(args, &count, flags);
-					else
-						print_decimal(args, &count);
-					break;
+					{
+						num = va_arg(args, int);
+						if (num < 0)
+						{
+							_putc('-');
+							count++;
+							num = -num;
+						}
+						temp = num;
+						do
+						{
+							temp /= 10;
+							digits++;
+						}
+						while (temp > 0);
+						while (digits > 0)
+						{
+							_putc('0' + (num / power(10, digits - 1)) % 10);
+							count++;
+							digits--;
+						}
+						break;
+					}
+				case 'r':
+					{
+						char *str = va_arg(args, char *);
+						length = 0;
+						while (str[length] != '\0')
+							length++;
+
+						while (length > 0)
+						{
+							length--;
+							_putc(str[length]);
+							count++;
+						}
+						break;
+					}
 				case 'u':
-					if (length_modifier == 1)
-						print_short_unsint(args, &count, flags);
-					else if (length_modifier == 2)
-						print_long_unsint(args, &count, flags);
-					else
-						print_unsint(args, &count);
-					break;
+					{
+						unsigned_num = va_arg(args, unsigned int);
+						temp = unsigned_num;
+						do
+						{
+							temp /= 10;
+							digits++;
+						}
+						while (temp > 0);
+						
+						while (digits > 0)
+						{
+							_putc('0' + (unsigned_num / power(10, digits - 1)) % 10);
+							count++;
+							digits--;
+						}
+						break;
+					}
 				case 'o':
-					if (length_modifier == 1)
-						print_short_oct(args, &count, flags);
-					else if (length_modifier == 2)
-						print_long_oct(args, &count, flags);
-					else
-						print_oct(args, &count);
-					break;
+					{
+						octal_num = va_arg(args, unsigned int);
+						temp = octal_num;
+						do
+						{
+							temp /= 8;
+							digits++;
+						}
+						while (temp > 0);
+
+						while (digits > 0)
+						{
+							_putc('0' + (octal_num / power(8, digits - 1)) % 8);
+							count++;
+							digits--;
+						}
+						break;
+					}
 				case 'x':
-					if (length_modifier == 1)
-						print_short_hex(args, &count, flags);
-					else if (length_modifier == 2)
-						print_long_hex(args, &count, flags);
-					else
-						print_hex(args, &count);
-					break;
-				case 'X':
-					if (length_modifier == 1)
-						print_short_HEX(args, &count, flags);
-					else if (length_modifier == 2)
-						print_long_HEX(args, &count, flags);
-					else
-						print_HEX(args, &count);
-					break;
+					{
+						hex_num = va_arg(args, unsigned int);
+						hex_digits = 1; /* At least one digit */
+						
+						while (hex_num >= 16)
+						{
+							hex_num /= 16;
+							hex_digits++;
+						}
+						_putc('0');
+						_putc('x');
+						count += 2;
+						
+						for (i = hex_digits - 1; i >= 0; i--)
+						{
+							_putc("0123456789abcdef"[(va_arg(args, unsigned int) >> (4 * i)) & 0xf]);
+							count++;
+						}
+						break;
+					}
 				default:
 					_putc('%');
 					_putc(*format);
