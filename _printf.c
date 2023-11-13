@@ -1,161 +1,66 @@
 #include "main.h"
 
+void print_buffer(char buffer[], int *buff_ind);
+
+/**
+ * _printf - Printf function
+ * @format: format.
+ * Return: Printed chars.
+ */
 int _printf(const char *format, ...)
 {
-	int digits = 0;
-	int i;
-	int num;
-	int temp;
-	int hex_digits;
-	int length;
-	unsigned int hex_num;
-	unsigned int octal_num;
-	unsigned int unsigned_num;
+	int i, printed = 0, printed_chars = 0;
+	int flags, width, precision, size, buff_ind = 0;
+	va_list list;
+	char buffer[BUFF_SIZE];
 
-	va_list args;
-	int count = 0;
+	if (format == NULL)
+		return (-1);
 
-	va_start(args, format);
+	va_start(list, format);
 
-	while (*format != '\0')
+	for (i = 0; format && format[i] != '\0'; i++)
 	{
-		if (*format != '%')
+		if (format[i] != '%')
 		{
-			_putc(*format);
-			count++;
+			buffer[buff_ind++] = format[i];
+			if (buff_ind == BUFF_SIZE)
+				print_buffer(buffer, &buff_ind);
+			/* write(1, &format[i], 1);*/
+			printed_chars++;
 		}
 		else
 		{
-			format++;
-			switch (*format)
-			{
-				case 'c':
-					_putc(va_arg(args, int));
-					count++;
-					break;
-				case 's':
-					{
-						char *str = va_arg(args, char *);
-						while (*str != '\0')
-						{
-							_putc(*str);
-							str++;
-							count++;
-						}
-						break;
-					}
-				case '%':
-					_putc('%');
-					count++;
-					break;
-				case 'd':
-				case 'i':
-					{
-						num = va_arg(args, int);
-						if (num < 0)
-						{
-							_putc('-');
-							count++;
-							num = -num;
-						}
-						temp = num;
-						do
-						{
-							temp /= 10;
-							digits++;
-						}
-						while (temp > 0);
-						while (digits > 0)
-						{
-							_putc('0' + (num / power(10, digits - 1)) % 10);
-							count++;
-							digits--;
-						}
-						break;
-					}
-				case 'r':
-					{
-						char *str = va_arg(args, char *);
-						length = 0;
-						while (str[length] != '\0')
-							length++;
-
-						while (length > 0)
-						{
-							length--;
-							_putc(str[length]);
-							count++;
-						}
-						break;
-					}
-				case 'u':
-					{
-						unsigned_num = va_arg(args, unsigned int);
-						temp = unsigned_num;
-						do
-						{
-							temp /= 10;
-							digits++;
-						}
-						while (temp > 0);
-						
-						while (digits > 0)
-						{
-							_putc('0' + (unsigned_num / power(10, digits - 1)) % 10);
-							count++;
-							digits--;
-						}
-						break;
-					}
-				case 'o':
-					{
-						octal_num = va_arg(args, unsigned int);
-						temp = octal_num;
-						do
-						{
-							temp /= 8;
-							digits++;
-						}
-						while (temp > 0);
-
-						while (digits > 0)
-						{
-							_putc('0' + (octal_num / power(8, digits - 1)) % 8);
-							count++;
-							digits--;
-						}
-						break;
-					}
-				case 'x':
-					{
-						hex_num = va_arg(args, unsigned int);
-						hex_digits = 1; /* At least one digit */
-						
-						while (hex_num >= 16)
-						{
-							hex_num /= 16;
-							hex_digits++;
-						}
-						_putc('0');
-						_putc('x');
-						count += 2;
-						
-						for (i = hex_digits - 1; i >= 0; i--)
-						{
-							_putc("0123456789abcdef"[(va_arg(args, unsigned int) >> (4 * i)) & 0xf]);
-							count++;
-						}
-						break;
-					}
-				default:
-					_putc('%');
-					_putc(*format);
-					count += 2;
-			}
+			print_buffer(buffer, &buff_ind);
+			flags = get_flags(format, &i);
+			width = get_width(format, &i, list);
+			precision = get_precision(format, &i, list);
+			size = get_size(format, &i);
+			++i;
+			printed = handle_print(format, &i, list, buffer,
+				flags, width, precision, size);
+			if (printed == -1)
+				return (-1);
+			printed_chars += printed;
 		}
-		format++;
 	}
 
-	va_end(args);
-	return (count);
+	print_buffer(buffer, &buff_ind);
+
+	va_end(list);
+
+	return (printed_chars);
+}
+
+/**
+ * print_buffer - Prints the contents of the buffer if it exist
+ * @buffer: Array of chars
+ * @buff_ind: Index at which to add next char, represents the length.
+ */
+void print_buffer(char buffer[], int *buff_ind)
+{
+	if (*buff_ind > 0)
+		write(1, &buffer[0], *buff_ind);
+
+	*buff_ind = 0;
 }
